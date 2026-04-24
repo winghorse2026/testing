@@ -1,100 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <title>JSON Interpreter</title>
+  <title>Latest JSON Viewer</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    textarea {
-      width: 100%;
-      height: 200px;
-      font-family: monospace;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-    }
-    table {
-      border-collapse: collapse;
-      margin-top: 20px;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background: #f4f4f4;
-    }
-    pre {
-      background: #f8f8f8;
-      padding: 15px;
-      margin-top: 20px;
-    }
+    body { font-family: Arial; margin: 40px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    th { background: #f4f4f4; }
+    .empty { color: #888; }
   </style>
 </head>
 <body>
 
-<h2>JSON Interpreter</h2>
-
-<p>Paste JSON payload below:</p>
-
-<textarea id="jsonInput" placeholder='[{"name":"Alice","age":30}]'></textarea>
-<br />
-<button onclick="renderJSON()">Render</button>
-
-<div id="output"></div>
+<h2>Latest Data</h2>
+<div id="content" class="empty">Waiting for data…</div>
 
 <script>
-function renderJSON() {
-  const input = document.getElementById("jsonInput").value;
-  const output = document.getElementById("output");
+const API = "https://shy-frog-d40e.yongxin.workers.dev/latest";
 
-  try {
-    const data = JSON.parse(input);
-    output.innerHTML = "";
+async function loadLatest() {
+  const res = await fetch(API);
+  const json = await res.json();
+  const data = json.data;
 
-    if (Array.isArray(data) && typeof data[0] === "object") {
-      output.appendChild(jsonToTable(data));
-    }
+  const container = document.getElementById("content");
+  container.innerHTML = "";
 
-    const pre = document.createElement("pre");
-    pre.textContent = JSON.stringify(data, null, 2);
-    output.appendChild(pre);
-
-  } catch (e) {
-    output.innerHTML = "<p style='color:red'>Invalid JSON</p>";
+  if (!Array.isArray(data) || data.length === 0) {
+    container.textContent = "No data yet";
+    container.className = "empty";
+    return;
   }
-}
 
-function jsonToTable(jsonArray) {
   const table = document.createElement("table");
-  const headers = Object.keys(jsonArray[0]);
+  const headers = Object.keys(data[0]);
 
-  const thead = table.createTHead();
-  const headRow = thead.insertRow();
+  const thead = table.insertRow();
   headers.forEach(h => {
     const th = document.createElement("th");
     th.textContent = h;
-    headRow.appendChild(th);
+    thead.appendChild(th);
   });
 
-  const tbody = table.createTBody();
-  jsonArray.forEach(obj => {
-    const row = tbody.insertRow();
+  data.forEach(row => {
+    const tr = table.insertRow();
     headers.forEach(h => {
-      const cell = row.insertCell();
-      cell.textContent = obj[h];
+      tr.insertCell().textContent = row[h];
     });
   });
 
-  return table;
+  container.appendChild(table);
 }
-</script>
 
+// Load immediately
+loadLatest();
+
+// Auto-refresh every 5 seconds
+setInterval(loadLatest, 5000);
+</script>
 </body>
 </html>
